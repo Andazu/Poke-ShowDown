@@ -1,25 +1,74 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using Newtonsoft.Json;
-using TMPro;
+using PokeStatus;
+using UnityEngine;
 using UnityEngine.Networking;
-public class P1Moves : MonoBehaviour
+
+namespace Battles
 {
-    // Start is called before the first frame update
-    [SerializeField] PokeStatusTeam1 pokemon;
+    public class Moves:MonoBehaviour
+    {
+        PokeStatusTeam _pokemon;
 
-    public List<moveStats> movePoolAttackP1 = new List<moveStats>();
-    public List<moveStats> moveSetP1 = new List<moveStats>();
+        private readonly List<MoveStats> _movePoolAttack = new();
+        public readonly List<MoveStats> moveSet = new();
+        private int _randomNum;
 
+        private int _moveCounter;
 
-    private int randomNum;
+        private bool _poolFull;
+        
+        private void Start()
+        {
+            _pokemon = GetComponent<PokeStatusTeam>();
+            for (int i = 0; i < _pokemon.movesGlobal.Count; i++)
+            {
+                StartCoroutine(GetRequest("https://pokeapi.co/api/v2/move/" + _pokemon.movesGlobal[i].move.name));
+            }
+        }
 
-    public int moveCounterP1 = 0;
+        private IEnumerator GetRequest(string uri)
+        {
+            using (UnityWebRequest webRequest = UnityWebRequest.Get(uri))
+            {
+                yield return webRequest.SendWebRequest();
+        
+                switch (webRequest.result)
+                {
+                    case UnityWebRequest.Result.ConnectionError: //connection error or dataprocessing error, log an error in console
+                    case UnityWebRequest.Result.DataProcessingError:
+                        Debug.LogError(string.Format("Something went wrong: {0}", webRequest.error));
+                        break;
+                    case UnityWebRequest.Result.Success:
+                        var moveStat = JsonConvert.DeserializeObject<MoveStats>(webRequest.downloadHandler.text);
+                        
+                        int? movePower = moveStat.power;
+                        _poolFull = false;
+        
+                        if (movePower.HasValue)
+                        {
+                            _movePoolAttack.Add(moveStat);
+                        }
+                        _poolFull = true;
+                        break;
+                }
+            }
+        }
 
-    public bool poolFullP1;
+    // Update is called once per frame
+        private void Update()
+        {
+            if (_poolFull && _moveCounter <= 3)
+            {
+                _randomNum = Random.Range(0, _movePoolAttack.Count - 1); //number in between 0 and end of movePoolAttack list
+                moveSet.Add(_movePoolAttack[_randomNum]);
+                _moveCounter++;
+            }
+            
+        }
+    }
 
-    // Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
     public class Ailment
     {
         public string name { get; set; }
@@ -126,7 +175,7 @@ public class P1Moves : MonoBehaviour
         public object use_before { get; set; }
     }
 
-    public class moveStats
+    public class MoveStats
     {
         public int? accuracy { get; set; }
         public ContestCombos contest_combos { get; set; }
@@ -187,66 +236,5 @@ public class P1Moves : MonoBehaviour
     {
         public string name { get; set; }
         public string url { get; set; }
-    }
-
-    private void Start()
-    {
-
-
-        for (int i = 0; i < pokemon.movesGlobalP1.Count; i++)
-        {
-            StartCoroutine(GetRequest("https://pokeapi.co/api/v2/move/" + pokemon.movesGlobalP1[i].move.name));
-
-        }
-
-    }
-
-    private IEnumerator GetRequest(string uri)
-    {
-        using (UnityWebRequest webRequest = UnityWebRequest.Get(uri))
-        {
-            yield return webRequest.SendWebRequest();
-
-            switch (webRequest.result)
-            {
-                case UnityWebRequest.Result.ConnectionError: //connection error or dataprocessing error, log an error in console
-                case UnityWebRequest.Result.DataProcessingError:
-                    Debug.LogError(string.Format("Something went wrong: {0}", webRequest.error));
-                    break;
-                case UnityWebRequest.Result.Success:
-                    moveStats moveStat = JsonConvert.DeserializeObject<moveStats>(webRequest.downloadHandler.text);
-
-                    //moveStats test = moveStat;
-                    int? movePower = moveStat.power;
-                    poolFullP1 = false;
-
-                    if (movePower.HasValue)
-                    {
-                        movePoolAttackP1.Add(moveStat);
-
-                    }
-                    
-                    poolFullP1 = true;
-
-
-                    break;
-
-            }
-        }
-    }
-
-    // Update is called once per frame
-    private void Update()
-    {
-
-       // Debug.Log(movePoolAttackP1);
-        if (poolFullP1 && moveCounterP1 <= 3)
-        {
-            randomNum = Random.Range(0, movePoolAttackP1.Count - 1); //number in between 0 and end of movePoolAttack list
-            moveSetP1.Add(movePoolAttackP1[randomNum]);
-            moveCounterP1++;
-        }
-
-
     }
 }

@@ -1,47 +1,97 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using Newtonsoft.Json;
+using Sprites;
 using TMPro;
+using UnityEngine;
 using UnityEngine.Networking;
 
-
-public class PokeStatusTeam1 : MonoBehaviour
+namespace PokeStatus
 {
-
-    public int randNumberP1;
-
-    public TextMeshProUGUI textP1;
-
-    [Header("Move/Stat")]
-    public List<Move> movesGlobalP1;
-    public List<Stat> statsGlobalP1;
-    public List<Type> typeGlobalP1;
-
-    [Header("Health")]
-    [SerializeField] public P1HealthBar p1Health;
-
-    [SerializeField] AudioSource LUGIA;
-
-
-    [Header("Sprites")]
-    [SerializeField] private p1Sprite sprite;
-
-  
-
+    public class PokeStatusTeam : MonoBehaviour
+    {
+        public int randNumber;
+        
+        public TextMeshProUGUI text;
+        
+        [Header("Move/Stat")]
+        public List<Move> movesGlobal;
+        public List<Stat> statsGlobal;
+        public List<Type> typeGlobal;
+        
+        [Header("Health")]
+        [SerializeField] public HealthBar healthBar;
+        
+        [HideInInspector] public PokeSprite sprite;
+        
+        
+        private void Awake()
+        {
+            sprite = GetComponent<PokeSprite>();
+            //use for multiple pokemon // setUpPokemonP2();
+            randNumber = Random.Range(1, 650);
+            
+            // Debug.Log(randNumberP1);
+            StartCoroutine(GetRequest("https://pokeapi.co/api/v2/pokemon/" + randNumber.ToString()));
+        }
+        
+        IEnumerator GetRequest(string uri)
+        {
+            using (UnityWebRequest webRequest = UnityWebRequest.Get(uri))
+            {
+                yield return webRequest.SendWebRequest();
+    
+                switch (webRequest.result)
+                {
+                    case UnityWebRequest.Result.ConnectionError: //connection error or dataprocessing error, log an error in console
+                    case UnityWebRequest.Result.DataProcessingError:
+                        Debug.LogError(string.Format("Something went wrong: {0}", webRequest.error));
+                        break;
+                    case UnityWebRequest.Result.Success:
+                        //API calls
+                        Form name = JsonConvert.DeserializeObject<Form>(webRequest.downloadHandler.text);
+                        PokeStats pokestats = JsonConvert.DeserializeObject<PokeStats>(webRequest.downloadHandler.text);
+    
+                        // name/id
+                        string initName = name.name;
+                        string capitalized = char.ToUpper(initName[0]) + initName.Substring(1);
+                        text.text = capitalized;
+    
+                        // moves
+                        movesGlobal = pokestats.moves;
+                        
+                        //stats
+                        statsGlobal = pokestats.stats;
+                        
+                        //health
+                        healthBar.SetMaxHealth(pokestats.stats[0].base_stat);
+    
+                        //type
+                        typeGlobal = pokestats.types;
+    
+                        sprite.SetUpSprite(randNumber);
+    
+                        healthBar.gameObject.SetActive(true);
+                        Debug.Log("READYP1");
+                        break;
+                }
+            }
+        }
+    }
+    
     public class Ability
     {
         public Ability ability { get; set; }
         public bool is_hidden { get; set; }
         public int slot { get; set; }
     }
-
+    
     public class Ability2
     {
         public string name { get; set; }
         public string url { get; set; }
     }
-
+    
     public class Animated
     {
         public string back_default { get; set; }
@@ -53,7 +103,7 @@ public class PokeStatusTeam1 : MonoBehaviour
         public string front_shiny { get; set; }
         public object front_shiny_female { get; set; }
     }
-
+    
     public class BlackWhite
     {
         public Animated animated { get; set; }
@@ -66,7 +116,7 @@ public class PokeStatusTeam1 : MonoBehaviour
         public string front_shiny { get; set; }
         public object front_shiny_female { get; set; }
     }
-
+    
     public class Crystal
     {
         public string back_default { get; set; }
@@ -78,7 +128,7 @@ public class PokeStatusTeam1 : MonoBehaviour
         public string front_shiny_transparent { get; set; }
         public string front_transparent { get; set; }
     }
-
+    
     public class DiamondPearl
     {
         public string back_default { get; set; }
@@ -90,19 +140,19 @@ public class PokeStatusTeam1 : MonoBehaviour
         public string front_shiny { get; set; }
         public object front_shiny_female { get; set; }
     }
-
+    
     public class DreamWorld
     {
         public string front_default { get; set; }
         public object front_female { get; set; }
     }
-
+    
     public class Emerald
     {
         public string front_default { get; set; }
         public string front_shiny { get; set; }
     }
-
+    
     public class FireredLeafgreen
     {
         public string back_default { get; set; }
@@ -110,82 +160,77 @@ public class PokeStatusTeam1 : MonoBehaviour
         public string front_default { get; set; }
         public string front_shiny { get; set; }
     }
-
+    
     public class Form
     {
         public string name { get; set; }
         public string url { get; set; }
     }
-
+    
     public class GameIndex
     {
         public int game_index { get; set; }
         public Version version { get; set; }
     }
-
+    
     public class GenerationI
     {
         [JsonProperty("red-blue")]
-        public RedBlue redblue { get; set; }
+            public RedBlue redblue { get; set; }
         public Yellow yellow { get; set; }
     }
-
+    
     public class GenerationIi
     {
         public Crystal crystal { get; set; }
         public Gold gold { get; set; }
         public Silver silver { get; set; }
     }
-
+    
     public class GenerationIii
     {
         public Emerald emerald { get; set; }
-
         [JsonProperty("firered-leafgreen")]
-        public FireredLeafgreen fireredleafgreen { get; set; }
-
+            public FireredLeafgreen fireredleafgreen { get; set; }
         [JsonProperty("ruby-sapphire")]
-        public RubySapphire rubysapphire { get; set; }
+            public RubySapphire rubysapphire { get; set; }
     }
-
+    
     public class GenerationIv
     {
         [JsonProperty("diamond-pearl")]
-        public DiamondPearl diamondpearl { get; set; }
-
+            public DiamondPearl diamondpearl { get; set; }
         [JsonProperty("heartgold-soulsilver")]
-        public HeartgoldSoulsilver heartgoldsoulsilver { get; set; }
+            public HeartgoldSoulsilver heartgoldsoulsilver { get; set; }
         public Platinum platinum { get; set; }
     }
-
+    
     public class GenerationV
     {
         [JsonProperty("black-white")]
-        public BlackWhite blackwhite { get; set; }
+            public BlackWhite blackwhite { get; set; }
     }
-
+    
     public class GenerationVi
     {
         [JsonProperty("omegaruby-alphasapphire")]
-        public OmegarubyAlphasapphire omegarubyalphasapphire { get; set; }
-
+            public OmegarubyAlphasapphire omegarubyalphasapphire { get; set; }
         [JsonProperty("x-y")]
-        public XY xy { get; set; }
+            public XY xy { get; set; }
     }
-
+    
     public class GenerationVii
     {
         public Icons icons { get; set; }
-
         [JsonProperty("ultra-sun-ultra-moon")]
-        public UltraSunUltraMoon ultrasunultramoon { get; set; }
+            public UltraSunUltraMoon ultrasunultramoon { get; set; }
     }
-
+    
     public class GenerationViii
     {
         public Icons icons { get; set; }
     }
-
+    
     public class Gold
     {
         public string back_default { get; set; }
@@ -194,7 +239,7 @@ public class PokeStatusTeam1 : MonoBehaviour
         public string front_shiny { get; set; }
         public string front_transparent { get; set; }
     }
-
+    
     public class HeartgoldSoulsilver
     {
         public string back_default { get; set; }
@@ -206,7 +251,7 @@ public class PokeStatusTeam1 : MonoBehaviour
         public string front_shiny { get; set; }
         public object front_shiny_female { get; set; }
     }
-
+    
     public class Home
     {
         public string front_default { get; set; }
@@ -214,37 +259,37 @@ public class PokeStatusTeam1 : MonoBehaviour
         public string front_shiny { get; set; }
         public object front_shiny_female { get; set; }
     }
-
+    
     public class Icons
     {
         public string front_default { get; set; }
         public object front_female { get; set; }
     }
-
+    
     public class Move
     {
         public Move2 move { get; set; }
         public List<VersionGroupDetail> version_group_details { get; set; }
     }
-
+    
     public class Move2
     {
         public string name { get; set; }
         public string url { get; set; }
     }
-
+    
     public class MoveLearnMethod
     {
         public string name { get; set; }
         public string url { get; set; }
     }
-
+    
     public class OfficialArtwork
     {
         public string front_default { get; set; }
         public string front_shiny { get; set; }
     }
-
+    
     public class OmegarubyAlphasapphire
     {
         public string front_default { get; set; }
@@ -252,16 +297,15 @@ public class PokeStatusTeam1 : MonoBehaviour
         public string front_shiny { get; set; }
         public object front_shiny_female { get; set; }
     }
-
+    
     public class Other
     {
         public DreamWorld dream_world { get; set; }
         public Home home { get; set; }
-
         [JsonProperty("official-artwork")]
-        public OfficialArtwork officialartwork { get; set; }
+            public OfficialArtwork officialartwork { get; set; }
     }
-
+    
     public class Platinum
     {
         public string back_default { get; set; }
@@ -273,7 +317,7 @@ public class PokeStatusTeam1 : MonoBehaviour
         public string front_shiny { get; set; }
         public object front_shiny_female { get; set; }
     }
-
+    
     public class RedBlue
     {
         public string back_default { get; set; }
@@ -283,7 +327,7 @@ public class PokeStatusTeam1 : MonoBehaviour
         public string front_gray { get; set; }
         public string front_transparent { get; set; }
     }
-
+    
     public class PokeStats
     {
         public List<Ability> abilities { get; set; }
@@ -305,7 +349,7 @@ public class PokeStatusTeam1 : MonoBehaviour
         public List<Type> types { get; set; }
         public int weight { get; set; }
     }
-
+    
     public class RubySapphire
     {
         public string back_default { get; set; }
@@ -313,7 +357,7 @@ public class PokeStatusTeam1 : MonoBehaviour
         public string front_default { get; set; }
         public string front_shiny { get; set; }
     }
-
+    
     public class Silver
     {
         public string back_default { get; set; }
@@ -322,13 +366,13 @@ public class PokeStatusTeam1 : MonoBehaviour
         public string front_shiny { get; set; }
         public string front_transparent { get; set; }
     }
-
+    
     public class Species
     {
         public string name { get; set; }
         public string url { get; set; }
     }
-
+    
     public class Sprites
     {
         public string back_default { get; set; }
@@ -342,32 +386,32 @@ public class PokeStatusTeam1 : MonoBehaviour
         public Other other { get; set; }
         public Versions versions { get; set; }
     }
-
+    
     public class Stat
     {
         public int base_stat { get; set; }
         public int effort { get; set; }
         public Stat2 stat { get; set; }
     }
-
+    
     public class Stat2
     {
         public string name { get; set; }
         public string url { get; set; }
     }
-
+    
     public class Type
     {
         public int slot { get; set; }
         public Type2 type { get; set; }
     }
-
+    
     public class Type2
     {
         public string name { get; set; }
         public string url { get; set; }
     }
-
+    
     public class UltraSunUltraMoon
     {
         public string front_default { get; set; }
@@ -375,53 +419,46 @@ public class PokeStatusTeam1 : MonoBehaviour
         public string front_shiny { get; set; }
         public object front_shiny_female { get; set; }
     }
-
+    
     public class Version
     {
         public string name { get; set; }
         public string url { get; set; }
     }
-
+    
     public class VersionGroup
     {
         public string name { get; set; }
         public string url { get; set; }
     }
-
+    
     public class VersionGroupDetail
     {
         public int level_learned_at { get; set; }
         public MoveLearnMethod move_learn_method { get; set; }
         public VersionGroup version_group { get; set; }
     }
-
+    
     public class Versions
     {
         [JsonProperty("generation-i")]
-        public GenerationI generationi { get; set; }
-
+            public GenerationI generationi { get; set; }
         [JsonProperty("generation-ii")]
-        public GenerationIi generationii { get; set; }
-
+            public GenerationIi generationii { get; set; }
         [JsonProperty("generation-iii")]
-        public GenerationIii generationiii { get; set; }
-
+            public GenerationIii generationiii { get; set; }
         [JsonProperty("generation-iv")]
-        public GenerationIv generationiv { get; set; }
-
+            public GenerationIv generationiv { get; set; }
         [JsonProperty("generation-v")]
-        public GenerationV generationv { get; set; }
-
+            public GenerationV generationv { get; set; }
         [JsonProperty("generation-vi")]
-        public GenerationVi generationvi { get; set; }
-
+            public GenerationVi generationvi { get; set; }
         [JsonProperty("generation-vii")]
-        public GenerationVii generationvii { get; set; }
-
+            public GenerationVii generationvii { get; set; }
         [JsonProperty("generation-viii")]
-        public GenerationViii generationviii { get; set; }
+            public GenerationViii generationviii { get; set; }
     }
-
+    
     public class XY
     {
         public string front_default { get; set; }
@@ -429,7 +466,7 @@ public class PokeStatusTeam1 : MonoBehaviour
         public string front_shiny { get; set; }
         public object front_shiny_female { get; set; }
     }
-
+    
     public class Yellow
     {
         public string back_default { get; set; }
@@ -439,77 +476,4 @@ public class PokeStatusTeam1 : MonoBehaviour
         public string front_gray { get; set; }
         public string front_transparent { get; set; }
     }
-    private void Awake()
-    {
-        //use for multiple pokemon // setUpPokemonP2();
-        randNumberP1 = Random.Range(1, 650);
-        if (randNumberP1 == 249)
-        {
-            LUGIA.Play();
-        }
-        // Debug.Log(randNumberP1);
-        StartCoroutine(GetRequest("https://pokeapi.co/api/v2/pokemon/" + randNumberP1.ToString()));
-
-    }
-
-/*    public void setUpPokemonP2()
-    {
-
-    }*/
-    IEnumerator GetRequest(string uri)
-    {
-        using (UnityWebRequest webRequest = UnityWebRequest.Get(uri))
-        {
-            yield return webRequest.SendWebRequest();
-
-            switch (webRequest.result)
-            {
-                case UnityWebRequest.Result.ConnectionError: //connection error or dataprocessing error, log an error in console
-                case UnityWebRequest.Result.DataProcessingError:
-                    Debug.LogError(string.Format("Something went wrong: {0}", webRequest.error));
-                    break;
-                case UnityWebRequest.Result.Success:
-
-                    //API calls
-                    Form name = JsonConvert.DeserializeObject<Form>(webRequest.downloadHandler.text);
-                    PokeStats pokestats = JsonConvert.DeserializeObject<PokeStats>(webRequest.downloadHandler.text);
-
-                    // name/id
-                    string initName = name.name;
-                    string Capitalized = char.ToUpper(initName[0]) + initName.Substring(1);
-                    textP1.text = Capitalized;
-
-                    // moves
-                    movesGlobalP1 = pokestats.moves;
-
-
-
-                    //stats
-                    statsGlobalP1 = pokestats.stats;
-
-
-                    //health
-                    p1Health.SetMaxHealthP1(pokestats.stats[0].base_stat);
-
-                    //type
-                    typeGlobalP1 = pokestats.types;
-
-                    sprite.setUpSpriteP1(randNumberP1);
-
-                    p1Health.gameObject.SetActive(true);
-                    Debug.Log("READYP1");
-
-                    //debug
-                    //Debug.Log(pokestats.types[0].type.name);
-
-
-                    break;
-            
-            }
-        }
-    }
-
-
-
-
 }
