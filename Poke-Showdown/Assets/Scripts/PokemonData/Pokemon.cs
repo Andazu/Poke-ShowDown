@@ -1,11 +1,8 @@
-﻿using UnityEngine;
+﻿using MoveData;
+using UnityEngine;
 
 namespace PokemonData
 {
-    public enum MoveClass
-    {
-        Phsyical,Special,Status
-    }
     public struct Pokemon
     {
         public MonMove[] monMoves { get; set; }
@@ -27,20 +24,7 @@ namespace PokemonData
             return Mathf.FloorToInt(((2 * baseStat + 15) * level) / 100.0f) + 5;
         }
     }
-
-    public struct MonMove
-    {
-        public string moveName { get; set; }
-        public Type type;
-        public MoveClass moveClass;
-        public int power;
-        public int pp;
-        public int currentPp;
-        public int priority;
-        public int targets;
-        public int accuracy;
-    }
-
+    
     public struct MonAbitity
     {
         public string name;
