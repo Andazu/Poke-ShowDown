@@ -1,23 +1,28 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using Battles;
 using Newtonsoft.Json;
+using PokemonData;
 using Sprites;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Networking;
+using Random = UnityEngine.Random;
 
 namespace PokeStatus
 {
     public class PokeStatusTeam : MonoBehaviour
     {
-        public int randNumber;
-        
+        private int randNumber;
+
+        public Moves moveSource;
         public TextMeshProUGUI text;
         
         [Header("Move/Stat")]
-        public List<Move> movesGlobal;
-        public List<Stat> statsGlobal;
-        public List<Type> typeGlobal;
+        public int[] statsGlobal;
+        public List<PokemonData.Type> typeGlobal;
         
         [Header("Health")]
         [SerializeField] public HealthBar healthBar;
@@ -58,16 +63,28 @@ namespace PokeStatus
                         text.text = capitalized;
     
                         // moves
-                        movesGlobal = pokestats.moves;
+                        moveSource = gameObject.AddComponent<Moves>();
+                        moveSource.Initialize(pokestats.moves);
                         
                         //stats
-                        statsGlobal = pokestats.stats;
+                        var stats = pokestats.stats.Select(s => Pokemon.CalculateOtherStat(s.base_stat, 50))
+                            .ToArray();
+                        stats[0] = Pokemon.CalculateHp(pokestats.stats[0].base_stat, 50);
+                        statsGlobal = stats;
                         
                         //health
-                        healthBar.SetMaxHealth(pokestats.stats[0].base_stat);
+                        healthBar.SetMaxHealth(stats[0]);
     
                         //type
-                        typeGlobal = pokestats.types;
+                        typeGlobal = pokestats.types.Select(t =>
+                        {
+                            Enum.TryParse(t.type.name,true,out PokemonData.Type type);
+                            return type;
+                        }).ToList();
+                        if (typeGlobal.Count <2)
+                        {
+                            typeGlobal.Add(PokemonData.Type.None);
+                        }
     
                         sprite.SetUpSprite(randNumber);
     

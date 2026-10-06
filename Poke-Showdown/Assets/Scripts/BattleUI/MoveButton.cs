@@ -1,14 +1,16 @@
-﻿using Battles;
+﻿using System;
+using PokemonData;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using Typing;
+using Type = PokemonData.Type;
 
 namespace BattleUI
 {
     public class MoveButton : MonoBehaviour
     {
-        private string _moveType;
+        private Type _moveType;
+        private string _moveTypeName;
         
         [SerializeField] private TextMeshProUGUI typeInfoText;
         private Button button;
@@ -16,7 +18,8 @@ namespace BattleUI
 
         public void SetType(string moveType)
         {
-            _moveType = moveType;
+            _moveTypeName = moveType;
+            Enum.TryParse(moveType, out _moveType);
         }
         
         private void Awake()
@@ -29,7 +32,7 @@ namespace BattleUI
         {
             color.highlightedColor = TypeColor.TypeColorDict[_moveType]; //typeColor[string of type from move]
             button.colors = color;
-            typeInfoText.text = _moveType.ToUpper();
+            typeInfoText.text = _moveTypeName.ToUpper();
             typeInfoText.color = TypeColor.TypeColorDict[_moveType];
         }
 

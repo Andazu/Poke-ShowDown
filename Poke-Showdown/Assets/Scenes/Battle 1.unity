@@ -833,7 +833,7 @@ MonoBehaviour:
   mainBGM: {fileID: 519420038}
   victoryBGM: {fileID: 519420043}
   lowHp: {fileID: 519420042}
-  YOULOST: {fileID: 519420044}
+  youLost: {fileID: 519420044}
   dialogueText: {fileID: 596762997}
   battleDialogue: {fileID: 519420046}
 --- !u!82 &519420038

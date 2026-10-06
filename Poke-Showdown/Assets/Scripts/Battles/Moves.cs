@@ -9,7 +9,6 @@ namespace Battles
 {
     public class Moves:MonoBehaviour
     {
-        PokeStatusTeam _pokemon;
 
         private readonly List<MoveStats> _movePoolAttack = new();
         public readonly List<MoveStats> moveSet = new();
@@ -18,41 +17,30 @@ namespace Battles
         private int _moveCounter;
 
         private bool _poolFull;
-        
-        private void Start()
-        {
-            _pokemon = GetComponent<PokeStatusTeam>();
-            for (int i = 0; i < _pokemon.movesGlobal.Count; i++)
-            {
-                StartCoroutine(GetRequest("https://pokeapi.co/api/v2/move/" + _pokemon.movesGlobal[i].move.name));
-            }
-        }
 
         private IEnumerator GetRequest(string uri)
         {
-            using (UnityWebRequest webRequest = UnityWebRequest.Get(uri))
+            using UnityWebRequest webRequest = UnityWebRequest.Get(uri);
+            yield return webRequest.SendWebRequest();
+        
+            switch (webRequest.result)
             {
-                yield return webRequest.SendWebRequest();
-        
-                switch (webRequest.result)
-                {
-                    case UnityWebRequest.Result.ConnectionError: //connection error or dataprocessing error, log an error in console
-                    case UnityWebRequest.Result.DataProcessingError:
-                        Debug.LogError(string.Format("Something went wrong: {0}", webRequest.error));
-                        break;
-                    case UnityWebRequest.Result.Success:
-                        var moveStat = JsonConvert.DeserializeObject<MoveStats>(webRequest.downloadHandler.text);
+                case UnityWebRequest.Result.ConnectionError: //connection error or dataprocessing error, log an error in console
+                case UnityWebRequest.Result.DataProcessingError:
+                    Debug.LogError(string.Format("Something went wrong: {0}", webRequest.error));
+                    break;
+                case UnityWebRequest.Result.Success:
+                    var moveStat = JsonConvert.DeserializeObject<MoveStats>(webRequest.downloadHandler.text);
                         
-                        int? movePower = moveStat.power;
-                        _poolFull = false;
+                    int? movePower = moveStat.power;
+                    _poolFull = false;
         
-                        if (movePower.HasValue)
-                        {
-                            _movePoolAttack.Add(moveStat);
-                        }
-                        _poolFull = true;
-                        break;
-                }
+                    if (movePower.HasValue)
+                    {
+                        _movePoolAttack.Add(moveStat);
+                    }
+                    _poolFull = true;
+                    break;
             }
         }
 
@@ -66,6 +54,14 @@ namespace Battles
                 _moveCounter++;
             }
             
+        }
+
+        public void Initialize(List<Move> moves)
+        {
+            foreach (var move in moves)
+            {
+                StartCoroutine(GetRequest("https://pokeapi.co/api/v2/move/" + move.move.name));
+            }
         }
     }
 
