@@ -176,18 +176,6 @@ namespace Battles
             }
         }
         
-        
-
-        private void HandleTurn()
-        {
-            (MonMove, int)[] chosenMoves; // move,speed of pokemon using move
-            //choose moves
-            
-            // play moves in order of prio/speed, change text and play sound after each move if necessary,
-            // Calculate damage and update health bars
-
-        }
-        
         void EffectivenessText()
         {
             if (_superEffective)
