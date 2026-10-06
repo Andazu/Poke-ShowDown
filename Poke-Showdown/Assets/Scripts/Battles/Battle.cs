@@ -1,12 +1,13 @@
+using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
+using PokemonData;
 using PokeStatus;
 using Sprites;
 using TMPro;
-using Typing;
 using UnityEngine;
 using UnityEngine.Serialization;
+using Random = UnityEngine.Random;
 
 namespace Battles
 {
@@ -15,9 +16,6 @@ namespace Battles
         // Start is called before the first frame update
         [FormerlySerializedAs("P1")] [SerializeField] private PokeStatusTeam p1;
         [FormerlySerializedAs("P2")] [SerializeField] private PokeStatusTeam p2;
-
-        Moves _p1MovesSource;
-        Moves _p2MovesSource;
 
         HealthBar _p1HealthBarSource;
         HealthBar _p2HealthBarSource;
@@ -30,7 +28,7 @@ namespace Battles
         [SerializeField] private AudioSource mainBGM;
         [SerializeField] private AudioSource victoryBGM;
         [FormerlySerializedAs("lowHP")] [SerializeField] private AudioSource lowHp;
-        [SerializeField] private AudioSource YOULOST;
+        [SerializeField] private AudioSource youLost;
     
         [Header("Text")]
         [SerializeField] private TextMeshProUGUI dialogueText;
@@ -38,14 +36,14 @@ namespace Battles
 
         private int _indexVarP1;//onClick Variable
         private int _indexVarP2; //onClick Variable
-        private float _actionCounterP1 = 0;
-        private float _actionCounterP2 = 0;
-        private double _damageResultP1;
-        private double _damageResultP2;
+        private float _actionCounterP1;
+        private float _actionCounterP2;
+        private int _damageResultP1;
+        private int _damageResultP2;
         private float _p2HealthbarVal;
 
         private bool _p1Turn = true;
-        private bool _p2Turn = false;
+        private bool _p2Turn;
 
         private string _p1Name;
         private string _p2Name;
@@ -54,20 +52,20 @@ namespace Battles
         private bool _p2Alive = true;
         private int _p1Input;
 
-        private bool _superEffectiveSound = false;
-        private bool _notEffectiveSound = false;
-        private bool _normalEffectSound = false;
-        private bool _noEffectSound = false;
+        private bool _superEffectiveSound;
+        private bool _notEffectiveSound;
+        private bool _normalEffectSound;
+        private bool _noEffectSound;
 
-        private bool _superEffective = false;
-        private bool _notEffective = false;
+        private bool _superEffective;
+        private bool _notEffective;
         private bool _normalEffect = false;
-        private bool _noEffect = false;
+        private bool _noEffect;
 
-        private bool _critHit = false;
+        private bool _critHit;
 
-        private bool _moveMissP1 = false;
-        private bool _moveMissP2 = false;
+        private bool _moveMissP1;
+        private bool _moveMissP2;
         private bool _canChooseMove = true;
         private float _currentHealth;
         private int _enemyRandomMove;
@@ -78,9 +76,6 @@ namespace Battles
         
             _p1Name = p1.text.text;
             _p2Name = p2.text.text;
-
-            _p1MovesSource = p1.gameObject.GetComponent<Moves>();
-            _p2MovesSource = p2.gameObject.GetComponent<Moves>();
             
             _p1Sprite = p1.sprite;
             _p2Sprite = p2.sprite;
@@ -89,9 +84,9 @@ namespace Battles
             _p2HealthBarSource = p2.healthBar;
 
             battleDialogue.WhatWillPokeDo(_p1Name);
-            _currentHealth = p1.statsGlobal[0].base_stat;
+            _currentHealth = p1.statsGlobal[0];
             
-            battleDialogue.InitMoveMenu(this,_p1MovesSource);
+            battleDialogue.InitMoveMenu(this,p1.moveSource);
         }
 
 
@@ -140,11 +135,11 @@ namespace Battles
             }
 
 
-            if (_actionCounterP1 < (float)_damageResultP1 && _p1HealthBarSource.slider.value != 0)
+            if (_actionCounterP1 < _damageResultP1 && _p1HealthBarSource.slider.value != 0)
             {
                 _p2HealthBarSource.SetHealth(_p2HealthBarSource.slider.value - 0.5f);
                 _actionCounterP1 += 0.5f;
-                if(_actionCounterP1 >= (float)_damageResultP1)
+                if(_actionCounterP1 >= _damageResultP1)
                 {
                     _actionCounterP1 = 0;
                     _damageResultP1 = 0;
@@ -156,12 +151,12 @@ namespace Battles
                 }
             }
 
-            if (_actionCounterP2 < (float)_damageResultP2)
+            if (_actionCounterP2 < _damageResultP2)
             {
             
                 _p1HealthBarSource.SetHealth(_p1HealthBarSource.slider.value - 0.5f);
                 _actionCounterP2 += 0.5f;
-                if(_actionCounterP2 >= (float)_damageResultP2)
+                if(_actionCounterP2 >= _damageResultP2)
                 {
                     _actionCounterP2 = 0;
                     _damageResultP2 = 0;
@@ -175,50 +170,40 @@ namespace Battles
             if (_p2HealthBarSource.slider.value == 0 && _p2Alive)
             {
                 _p2Alive = false;
-                StartCoroutine(P2Faint());
+                StartCoroutine(HandleFaint(false));
             }
 
             if(_p1HealthBarSource.slider.value == 0 && _p1Alive)
             {
                 _p1Alive = false;
-                StartCoroutine(P1Faint());
+                StartCoroutine(HandleFaint(true));
             }
         }
         
-        IEnumerator EffectivenessText()
+        void EffectivenessText()
         {
             if (_superEffective)
             {
-                yield return new WaitForSeconds(1f);
-                dialogueText.text = "";
                 dialogueText.text = "It's super effective!";
                 _superEffective = false;
             }
             else if (_notEffective)
             {
-                yield return new WaitForSeconds(1f);
-                dialogueText.text = "";
                 dialogueText.text = "It's not very effective..."; 
                 _notEffective = false;
             }
             else if (_noEffect)
             {
-                yield return new WaitForSeconds(1f);
-                dialogueText.text = "";
                 dialogueText.text = "It has no effect";
                 _noEffect = false;
             }
             else if (_moveMissP1) 
             {
-                yield return new WaitForSeconds(1f);
-                dialogueText.text = "";
                 dialogueText.text = p1.text.text + " missed!";
                 _moveMissP1 = false;
             }
             else if (_moveMissP2)
             {
-                yield return new WaitForSeconds(1f);
-                dialogueText.text = "";
                 dialogueText.text = "The foe's " + p2.text.text + " missed!";
                 _moveMissP2 = false;
             }
@@ -230,76 +215,62 @@ namespace Battles
 
         private IEnumerator CritHitText()
         {
-            if(_critHit)
-            {
-                yield return new WaitForSeconds(1f);
-                dialogueText.text = "";
-                dialogueText.text = "A critical hit!";
-                _critHit = false;
-            }
+            yield return new WaitForSeconds(1f);
+            dialogueText.text = "A critical hit!";
+            _critHit = false;
         }
-        public void P1DialogueText()
+
+        private void P1DialogueText()
         {
             battleDialogue.WhatWillPokeDo(_p1Name);
             _canChooseMove = true;
         }
 
-
-        IEnumerator P1Faint()
+        IEnumerator HandleFaint(bool humanPlayer)
         {
             if(_critHit)
             {
                 yield return StartCoroutine(CritHitText());
             }
-
-            yield return StartCoroutine(EffectivenessText());
+            EffectivenessText();
             yield return new WaitForSeconds(1f);
             dialogueText.text = "";
-            dialogueText.text = _p1Name + " fainted!";
-            p1.text.text = "";
-            _p1Sprite.gameObject.SetActive(false);
-            _p1HealthBarSource.gameObject.SetActive(false);
-            yield return new WaitForSeconds(1f);
-            lowHp.FadeOut(1f);
-            mainBGM.FadeOut(2f);
-            SetLossText();
-        }
-
-
-        IEnumerator P2Faint()
-        {
-            if(_critHit)
+            dialogueText.text = humanPlayer? _p1Name + " fainted!": "The foe's " + _p2Name + " fainted!";
+            if (humanPlayer)
             {
-                yield return StartCoroutine(CritHitText());
+                p1.text.text = "";
+                _p1Sprite.gameObject.SetActive(false);
+                _p1HealthBarSource.gameObject.SetActive(false);
             }
-
-            yield return StartCoroutine(EffectivenessText());
-            yield return new WaitForSeconds(1f);
-            dialogueText.text = "";
-            dialogueText.text = "The foe's " + _p2Name + " fainted!";
-            p2.text.text = "";
-            _p2Sprite.gameObject.SetActive(false);
-            _p2HealthBarSource.gameObject.SetActive(false);
+            else
+            {
+                p2.text.text = "";
+                _p2Sprite.gameObject.SetActive(false);
+                _p2HealthBarSource.gameObject.SetActive(false);
+            }
             yield return new WaitForSeconds(1f);
             mainBGM.FadeOut(2f);
-            SetVictoryText();
+            if (humanPlayer)
+            {
+                lowHp.FadeOut(1f);
+                SetLossText();
+            }
+            else
+            {
+                SetVictoryText();
+            }
         }
-
-
 
         public void SetVictoryText()
         {
-            dialogueText.text = "";
             dialogueText.text = "You defeated the enemy trainer!";
             victoryBGM.Play();
         }
 
         public void SetLossText()
         {
-            dialogueText.text = "";
             dialogueText.text = "You lost";
-
-            YOULOST.Play(); //change later lol
+            youLost.Play(); //change later lol
         }
 
         private IEnumerator P1Move()
@@ -310,15 +281,15 @@ namespace Battles
                 yield return StartCoroutine(CritHitText());
             }
 
-            yield return StartCoroutine(EffectivenessText());
+            EffectivenessText();
             yield return new WaitForSeconds(1f);
-            P1ChooseMove(_p1Input);
+            PlayerChooseMove(_p1Input,true);
             if (_critHit)
             {
                 yield return StartCoroutine(CritHitText());
             }
             yield return new WaitForSeconds(0.5f);
-            yield return StartCoroutine(EffectivenessText());
+            EffectivenessText();
             yield return new WaitForSeconds(1f);
             if(_p2Alive)
             {
@@ -332,26 +303,24 @@ namespace Battles
             if(_critHit)
             {
                 yield return StartCoroutine(CritHitText());
-            }
-            yield return StartCoroutine(EffectivenessText());
+            } 
+            EffectivenessText();
             yield return new WaitForSeconds(1f);
             _enemyRandomMove = Random.Range(0, 3);
-            EnemyChooseMove(_enemyRandomMove);
+            PlayerChooseMove(_enemyRandomMove,false);
             if (_critHit)
             {
                 yield return StartCoroutine(CritHitText());
             }
             yield return new WaitForSeconds(0.5f);
-            yield return StartCoroutine(EffectivenessText());
+            EffectivenessText();
             yield return new WaitForSeconds(1f);
             if(_p1Alive)
             {
                 P1DialogueText();
             }
         }
-
-
-
+        
         public void ChooseMove(int input)
         {
             if (_canChooseMove && _p2HealthBarSource.slider.value != 0 && _p1HealthBarSource.slider.value != 0)
@@ -359,17 +328,17 @@ namespace Battles
                 _enemyRandomMove = Random.Range(0, 3);
                 _p1Input = input;
 
-                if (p1.statsGlobal[5].base_stat > p2.statsGlobal[5].base_stat)
+                if (p1.statsGlobal[5] > p2.statsGlobal[5])
                 {
                     _p1Turn = true;
                     _p2Turn = false;
-                    P1ChooseMove(input);
+                    PlayerChooseMove(input,true);
                 }
-                else if (p1.statsGlobal[5].base_stat < p2.statsGlobal[5].base_stat)
+                else if (p1.statsGlobal[5] < p2.statsGlobal[5])
                 {
                     _p2Turn = true;
                     _p1Turn = false;
-                    EnemyChooseMove(_enemyRandomMove);
+                    PlayerChooseMove(_enemyRandomMove,false);
                 }
                 else
                 {
@@ -378,237 +347,110 @@ namespace Battles
                     {
                         _p1Turn = true;
                         _p2Turn = false;
-                        P1ChooseMove(input);
+                        PlayerChooseMove(input,true);
                     }
                     else
                     {
                         _p2Turn = true;
                         _p1Turn = false;
-                        EnemyChooseMove(_enemyRandomMove);
+                        PlayerChooseMove(_enemyRandomMove,false);
                     }
                 }
                 _canChooseMove = false;
 
             }
         }
-        public void EnemyChooseMove(int input) //make it wait for moves to generate
+
+        private void HandeEffectivenessSound(DamageCalculator.Effectiveness effectiveness)
         {
-            string p2MoveCap = char.ToUpper(_p2MovesSource.moveSet[input].name[0]) + _p2MovesSource.moveSet[input].name.Substring(1);
-            dialogueText.text = "";
-            dialogueText.text = "The foe's " + p2.text.text + " used " + p2MoveCap + "!";
-            int? enemyPower = _p2MovesSource.moveSet[input].power;
-            float targetHealth = p1.statsGlobal[0].base_stat;
-            
-            float enemyAttack = p2.statsGlobal[1].base_stat;
-            float enemySpAttack = p2.statsGlobal[3].base_stat;
-
-            float targetDefense = p2.statsGlobal[2].base_stat;
-            float targetSpDefense = p2.statsGlobal[4].base_stat;
-
-            int calcRandom = Random.Range(80, 100);
-            int accRandom = Random.Range(1, 100);
-
-            double damageCalc;
-
-            if (accRandom > _p2MovesSource.moveSet[input].accuracy)
+            switch (effectiveness)
             {
-                _moveMissP2 = true;
-                return;
-            }
-
-            if (_p2MovesSource.moveSet[input].damage_class.name == "physical")
-            {
-                damageCalc = ((((int)enemyPower * (enemyAttack / targetDefense) * 10) / 50) * calcRandom) / 100;
-                
-            }
-            else
-            {
-                damageCalc = ((((int)enemyPower * (enemySpAttack / targetSpDefense) * 10) / 50) * calcRandom) / 100;
-            }
-
-            //crit
-            int critRand = Random.Range(1, 100);
-            Debug.Log(critRand);
-            if (critRand < 7)
-            {
-                damageCalc = damageCalc * 1.5;
-                _critHit = true;
-            }
-        
-            List<string> p1Types = new List<string>();
-            if (p1.typeGlobal.Count == 2)
-            {
-                p1Types.Add(p1.typeGlobal[0].type.name);
-                p1Types.Add(p1.typeGlobal[1].type.name);
-            }
-            else
-            {
-                p1Types.Add(p1.typeGlobal[0].type.name);
-            }
-
-            damageCalc = EffectivenessCalc(damageCalc, input, _p2MovesSource.moveSet[input].type.name, p1Types);
-
-            //STAB
-            damageCalc = StabCalc(damageCalc, p1Types, _p2MovesSource.moveSet[input].type.name);
-        
-            _currentHealth -= (float)damageCalc;
-        
-            if (_currentHealth / targetHealth <= 0.160 && _currentHealth / targetHealth > 0) //normalize percent value?
-            {
-
-                mainBGM.Stop();
-                lowHp.Play();
-            }
-
-            _damageResultP2 = damageCalc;
-            Mathf.Floor((float)_damageResultP2);
-        }
-
-
-        public void P1ChooseMove(int input)
-        {
-            //check for speed here
-            string p1MoveCap = char.ToUpper(_p1MovesSource.moveSet[input].name[0]) + _p1MovesSource.moveSet[input].name.Substring(1);
-            dialogueText.text = "";
-            dialogueText.text = p1.text.text + " used " + p1MoveCap + "!";
-
-            int? playerPower = _p1MovesSource.moveSet[input].power;
-            float targetHealth = p2.statsGlobal[0].base_stat;
-
-            //Attacks
-            float playerAttack = p1.statsGlobal[1].base_stat;
-            float playerSpAttack = p1.statsGlobal[3].base_stat;
-            
-            //Defenses
-            float targetDefense = p2.statsGlobal[2].base_stat;
-            float targetSpDefense = p2.statsGlobal[4].base_stat;
-
-            int calcRandom = Random.Range(80, 100);
-            int accRandom = Random.Range(1, 100);
-
-            //normal effect, 2x super effective, 4x super effective, 0.5 not effective, 0.25 not effective, no effect
-
-            //accuracy
-            double damageCalc;
-
-            // Debug.Log("P1 rand:" + accRandom);
-            if (accRandom > _p1MovesSource.moveSet[input].accuracy) 
-            {
-
-                //  Debug.Log("P1: MISS");
-                _moveMissP1 = true;
-                return;
-            }
-
-            if(_p1MovesSource.moveSet[input].damage_class.name == "physical") 
-            {
-                damageCalc = ((((int)playerPower * (playerAttack / targetDefense) * 10) / 50) * calcRandom) / 100;
-                //Debug.Log("p1: PHYS");
-            }
-                
-            else
-            {
-                damageCalc = ((((int)playerPower * (playerSpAttack / targetSpDefense) * 10) / 50) * calcRandom) / 100;
-                // Debug.Log("p1: SP");
-            }
-
-            //crit
-            int critRand = Random.Range(1, 100);
-            Debug.Log(critRand);
-            if (critRand < 7)
-            {
-                damageCalc *= 1.5;
-
-                _critHit = true;
-            }
-
-            List<string> p2Types = new List<string>();
-            if (p2.typeGlobal.Count == 2)
-            {
-                p2Types.Add(p2.typeGlobal[0].type.name);
-                p2Types.Add(p2.typeGlobal[1].type.name);
-            }
-            else
-            {
-                p2Types.Add(p2.typeGlobal[0].type.name);
-            }
-
-            damageCalc = EffectivenessCalc(damageCalc, input, _p1MovesSource.moveSet[input].type.name, p2Types);
-
-            //STAB
-            damageCalc = StabCalc(damageCalc, p2Types, _p1MovesSource.moveSet[input].type.name);
-
-            _damageResultP1 = damageCalc;
-    
-            Mathf.Floor((float)_damageResultP1);
-        }
-
-
-        private double StabCalc(double damageCalc, List<string> pokeTypes, string moveType )
-        {
-            if (pokeTypes.Contains(moveType))
-            {
-                damageCalc *= 1.5f;
-            }
-            return damageCalc;
-        }
-    
-
-        private double EffectivenessCalc(double damageCalc, int input, string dealingDamage, List<string> takingDamage)
-        {
-            //TYPE CALC
-            //Debug.Log("THIS IS THE MOVE TYPE DEALING DAMAGE" + dealingDamage);
-
-            //Debug.Log("Before Calcs: " + damageCalc);
-
-            double beforeDamageCalc = damageCalc;
-
-            //Debug.Log("P HAS THIS MANY TYPES" + P2.typeGlobalP2.Count);
-            var superEffectives = TypeEffectiveness.superEffective[dealingDamage];
-            var notEffectives = TypeEffectiveness.superEffective[dealingDamage];
-            var immunes = TypeEffectiveness.superEffective[dealingDamage];
-            
-            foreach (var type in takingDamage)
-            {
-                if (superEffectives.Contains(type))
-                {
-                    damageCalc *= 2;
-                }else if (notEffectives.Contains(type))
-                {
-                    damageCalc *= .5f;
-                }else if (immunes.Contains(type))
-                {
-                    damageCalc *= 0;
+                case DamageCalculator.Effectiveness.SuperEffective:
+                    _superEffectiveSound = true;
                     break;
-                }
+                case DamageCalculator.Effectiveness.NoEffect:
+                    _noEffectSound = true;
+                    break;
+                case DamageCalculator.Effectiveness.NotEffective:
+                    _notEffectiveSound = true;
+                    break;
+                case DamageCalculator.Effectiveness.Regular:
+                    _normalEffectSound = true;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(effectiveness), effectiveness, null);
             }
+        }
+
+        private void PlayerChooseMove(int input, bool isP1)
+        {
+            var team = isP1 ? p1 : p2;
             
-            //check which type of Effectiveness
-            if(damageCalc >= beforeDamageCalc * 2)
+            var accRandom = Random.Range(1, 100);
+            //accuracy
+            if (accRandom > team.moveSource.moveSet[input].accuracy) 
             {
-                _superEffectiveSound = true;
+                if (isP1)
+                {
+                    _moveMissP1 = true;
+                }
+                else
+                {
+                    _moveMissP2 = true;
+                }
+                return;
             }
-            else if (damageCalc != 0 && damageCalc <= beforeDamageCalc * 0.5f)
+            //check for speed here
+            var moveCap = char.ToUpper(team.moveSource.moveSet[input].name[0]) + team.moveSource.moveSet[input].name.Substring(1);
+            dialogueText.text = isP1? p1.text.text + " used " + moveCap + "!" : "The foe's " + p2.text.text + " used " + moveCap + "!";
+
+            var unParsed = team.moveSource.moveSet[input];
+            Enum.TryParse(unParsed.type.name, true, out PokemonData.Type type);
+            Enum.TryParse(unParsed.damage_class.name, true, out MoveClass damageClass);
+
+            var move = new MonMove
             {
-                _notEffectiveSound = true;
-            }
-            else if (beforeDamageCalc == damageCalc)
+                power = unParsed.power.Value,
+                type = type,
+                moveClass = damageClass
+            };
+            var attackerStats = p1.statsGlobal.Select(s => Pokemon.CalculateOtherStat(s, 50)).ToArray();
+            var attacker = new Pokemon
             {
-                _normalEffectSound = true;
-            }
-            else if(damageCalc == 0)
+                stats = attackerStats,
+                level = 50,
+                type1 = p1.typeGlobal[0],
+                type2 = p1.typeGlobal[1],
+            };
+            
+            var defenderStats = p2.statsGlobal.Select(s => Pokemon.CalculateOtherStat(s, 50)).ToArray();
+            var defender = new Pokemon
             {
-                _noEffectSound = true;
+                stats = defenderStats,
+                level = 50,
+                type1 = p2.typeGlobal[0],
+                type2 = p2.typeGlobal[1],
+            };
+
+            var (dmg, effectiveness) = DamageCalculator.CalculateDamage(attacker, defender, move);
+            HandeEffectivenessSound(effectiveness);
+
+            if (!isP1)
+            {
+                float targetHealth = p1.statsGlobal[0];
+                _currentHealth -= dmg;
+                if (_currentHealth / targetHealth <= 0.160 && _currentHealth / targetHealth > 0) //normalize percent value?
+                {
+                    mainBGM.Stop();
+                    lowHp.Play();
+                }
+                _damageResultP2 = dmg;
             }
             else
             {
-                _noEffectSound = false;
-                _superEffectiveSound = false;
-                _notEffectiveSound = false;
-                _normalEffectSound = false;
+                _damageResultP1 = dmg;
             }
 
-            return damageCalc;
         }
     }
 }

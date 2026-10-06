@@ -1,10 +1,7 @@
 using System.Collections.Generic;
-using Battles;
-using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
-namespace Typing
+namespace PokemonData
 {
     public static class TypeColor
     {
