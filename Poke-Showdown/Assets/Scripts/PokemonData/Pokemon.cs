@@ -38,6 +38,7 @@ namespace PokemonData
         public int currentPp;
         public int priority;
         public int targets;
+        public int accuracy;
     }
 
     public struct MonAbitity

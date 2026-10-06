@@ -8,7 +8,7 @@ namespace Battles
     {
         public enum Effectiveness
         {
-            SuperEffective,NoEffect,NotEffective,Regular
+            SuperEffective,Regular,NotEffective,NoEffect
         }
         
         private static float CalculateEffectivenessMultiplier(PokemonData.Type moveType, PokemonData.Type[] defenderTypes)
@@ -37,14 +37,14 @@ namespace Battles
             return effectiveness;
         }
         
-        public static (int,Effectiveness) CalculateDamage(Pokemon attacker, Pokemon defender, MonMove move)
+        public static (int,Effectiveness,bool) CalculateDamage(Pokemon attacker, Pokemon defender, MonMove move)
         {
             //(⌊⌊(⌊2×Level5⌋+2)×Power×A/D⌋50⌋+2)×Targets×PB×Weather×GlaiveRush×Critical×random×STAB×Type×Burn×other×ZMove×TeraShield
             var effect = CalculateEffectivenessMultiplier(move.type, new[]{defender.type1, defender.type2});
 
             if (effect == 0.0)
             {
-                return (0, Effectiveness.NoEffect);
+                return (0, Effectiveness.NoEffect,false);
             }
 
             var effectiveness = Effectiveness.Regular;
@@ -71,7 +71,7 @@ namespace Battles
             dmg = Mathf.FloorToInt(Mathf.FloorToInt(dmg) * rand/100.0f);
             dmg = Mathf.FloorToInt(dmg) * stab;
             dmg = Mathf.FloorToInt(dmg) * effect;
-            return (Mathf.FloorToInt(dmg),effectiveness);
+            return (Mathf.FloorToInt(dmg),effectiveness,crit > 1);
         }
     }
 }

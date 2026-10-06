@@ -1,17 +1,20 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using PokemonData;
 using PokeStatus;
 using UnityEngine;
 using UnityEngine.Networking;
+using Random = UnityEngine.Random;
 
 namespace Battles
 {
     public class Moves:MonoBehaviour
     {
 
-        private readonly List<MoveStats> _movePoolAttack = new();
-        public readonly List<MoveStats> moveSet = new();
+        private readonly List<MonMove> _movePoolAttack = new();
+        public readonly List<MonMove> moveSet = new();
         private int _randomNum;
 
         private int _moveCounter;
@@ -34,10 +37,21 @@ namespace Battles
                         
                     int? movePower = moveStat.power;
                     _poolFull = false;
+                    
+                    Enum.TryParse(moveStat.type.name,true,out PokemonData.Type type);
         
                     if (movePower.HasValue)
                     {
-                        _movePoolAttack.Add(moveStat);
+                        _movePoolAttack.Add(new MonMove
+                        {
+                            currentPp = moveStat.pp.Value,
+                            pp = moveStat.pp.Value,
+                            moveName = moveStat.name,
+                            power = movePower.Value,
+                            priority = moveStat.priority.Value,
+                            type = type,
+                            accuracy = moveStat.accuracy ?? 0,
+                        });
                     }
                     _poolFull = true;
                     break;

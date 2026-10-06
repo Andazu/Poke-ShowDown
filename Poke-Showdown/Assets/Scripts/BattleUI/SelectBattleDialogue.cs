@@ -1,14 +1,15 @@
 using System.Collections;
+using Battles;
 using TMPro;
 using UnityEngine;
 
-namespace Battles
+namespace BattleUI
 {
     public class SelectBattleDialogue : MonoBehaviour
     {
         [SerializeField] private TextMeshProUGUI commandText;
 
-        [SerializeField] private buttonChoose displayMoves;
+        [SerializeField] private ButtonChoose displayMoves;
 
         [SerializeField] private AudioSource battleSelectSound;
 

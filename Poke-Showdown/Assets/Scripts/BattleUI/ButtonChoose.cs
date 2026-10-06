@@ -1,10 +1,10 @@
-using BattleUI;
+using Battles;
 using TMPro;
 using UnityEngine;
 
-namespace Battles
+namespace BattleUI
 {
-    public class buttonChoose : MonoBehaviour
+    public class ButtonChoose : MonoBehaviour
     {
         private Battle _battle;
         private Moves _p1Moves;
@@ -61,19 +61,19 @@ namespace Battles
         {
             Debug.Log("WORKING");
 
-            string move1Cap = char.ToUpper(_p1Moves.moveSet[0].name[0]) + _p1Moves.moveSet[0].name.Substring(1);
+            string move1Cap = char.ToUpper(_p1Moves.moveSet[0].moveName[0]) + _p1Moves.moveSet[0].moveName.Substring(1);
             move1.text = move1Cap;
 
 
-            string move2Cap = char.ToUpper(_p1Moves.moveSet[1].name[0]) + _p1Moves.moveSet[1].name.Substring(1);
+            string move2Cap = char.ToUpper(_p1Moves.moveSet[1].moveName[0]) + _p1Moves.moveSet[1].moveName.Substring(1);
             move2.text = move2Cap;
 
 
-            string move3Cap = char.ToUpper(_p1Moves.moveSet[2].name[0]) + _p1Moves.moveSet[2].name.Substring(1);
+            string move3Cap = char.ToUpper(_p1Moves.moveSet[2].moveName[0]) + _p1Moves.moveSet[2].moveName.Substring(1);
             move3.text = move3Cap;
 
 
-            string move4Cap = char.ToUpper(_p1Moves.moveSet[3].name[0]) + _p1Moves.moveSet[3].name.Substring(1);
+            string move4Cap = char.ToUpper(_p1Moves.moveSet[3].moveName[0]) + _p1Moves.moveSet[3].moveName.Substring(1);
             move4.text = move4Cap;
 
         }

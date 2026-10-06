@@ -1,6 +1,6 @@
 using System;
 using System.Collections;
-using System.Linq;
+using BattleUI;
 using PokemonData;
 using PokeStatus;
 using Sprites;
@@ -13,7 +13,6 @@ namespace Battles
 {
     public class Battle : MonoBehaviour
     {
-        // Start is called before the first frame update
         [FormerlySerializedAs("P1")] [SerializeField] private PokeStatusTeam p1;
         [FormerlySerializedAs("P2")] [SerializeField] private PokeStatusTeam p2;
 
@@ -24,7 +23,7 @@ namespace Battles
         PokeSprite _p2Sprite;
 
         [Header("Audio")]
-        [SerializeField] private AudioSource[] effectivenessSound;
+        [SerializeField] private AudioSource[] effectivenessSounds;
         [SerializeField] private AudioSource mainBGM;
         [SerializeField] private AudioSource victoryBGM;
         [FormerlySerializedAs("lowHP")] [SerializeField] private AudioSource lowHp;
@@ -72,8 +71,6 @@ namespace Battles
         
         private void Start()
         {
-            mainBGM.Play();
-        
             _p1Name = p1.text.text;
             _p2Name = p2.text.text;
             
@@ -94,23 +91,22 @@ namespace Battles
         {
             if (_superEffectiveSound)
             {
-                effectivenessSound[1].Play();
+                effectivenessSounds[1].Play();
                 _superEffective = true;
                 _superEffectiveSound = false;
             }
             else if (_notEffectiveSound)
             {
-                effectivenessSound[2].Play();
+                effectivenessSounds[2].Play();
                 _notEffective = true;
                 _notEffectiveSound = false;
             }
             else if (_normalEffectSound)
             {
-                effectivenessSound[0].Play();
+                effectivenessSounds[0].Play();
                 _normalEffect = true;
                 _normalEffectSound = false;
             }
-
             else if (_noEffectSound)
             {
                 _noEffect = true;
@@ -118,7 +114,7 @@ namespace Battles
             }
 
             //TODO: Fix move miss and no effect
-            if (_noEffectSound && !_p2Turn || _moveMissP1 && !_p2Turn)
+            if (_noEffect && !_p2Turn || _moveMissP1 && !_p2Turn)
             {
                 Debug.Log("NO EFFECT");
             
@@ -126,7 +122,7 @@ namespace Battles
                 _moveMissP1 = false;
 
             }
-            if(_noEffectSound && !_p1Turn || _moveMissP2 && !_p1Turn)
+            if(_noEffect && !_p1Turn || _moveMissP2 && !_p1Turn)
             {
                 Debug.Log("NO EFFECT");
             
@@ -178,6 +174,18 @@ namespace Battles
                 _p1Alive = false;
                 StartCoroutine(HandleFaint(true));
             }
+        }
+        
+        
+
+        private void HandleTurn()
+        {
+            (MonMove, int)[] chosenMoves; // move,speed of pokemon using move
+            //choose moves
+            
+            // play moves in order of prio/speed, change text and play sound after each move if necessary,
+            // Calculate damage and update health bars
+
         }
         
         void EffectivenessText()
@@ -384,11 +392,12 @@ namespace Battles
 
         private void PlayerChooseMove(int input, bool isP1)
         {
-            var team = isP1 ? p1 : p2;
+            var attackingTeam = isP1 ? p1 : p2;
+            var defendingTeam = isP1 ? p2 : p1;
             
             var accRandom = Random.Range(1, 100);
             //accuracy
-            if (accRandom > team.moveSource.moveSet[input].accuracy) 
+            if (accRandom > attackingTeam.moveSource.moveSet[input].accuracy) 
             {
                 if (isP1)
                 {
@@ -401,38 +410,29 @@ namespace Battles
                 return;
             }
             //check for speed here
-            var moveCap = char.ToUpper(team.moveSource.moveSet[input].name[0]) + team.moveSource.moveSet[input].name.Substring(1);
+            var moveCap = char.ToUpper(attackingTeam.moveSource.moveSet[input].moveName[0]) + attackingTeam.moveSource.moveSet[input].moveName.Substring(1);
             dialogueText.text = isP1? p1.text.text + " used " + moveCap + "!" : "The foe's " + p2.text.text + " used " + moveCap + "!";
 
-            var unParsed = team.moveSource.moveSet[input];
-            Enum.TryParse(unParsed.type.name, true, out PokemonData.Type type);
-            Enum.TryParse(unParsed.damage_class.name, true, out MoveClass damageClass);
-
-            var move = new MonMove
-            {
-                power = unParsed.power.Value,
-                type = type,
-                moveClass = damageClass
-            };
-            var attackerStats = p1.statsGlobal.Select(s => Pokemon.CalculateOtherStat(s, 50)).ToArray();
+            var move = attackingTeam.moveSource.moveSet[input];
+            
             var attacker = new Pokemon
             {
-                stats = attackerStats,
+                stats = attackingTeam.statsGlobal,
                 level = 50,
                 type1 = p1.typeGlobal[0],
                 type2 = p1.typeGlobal[1],
             };
             
-            var defenderStats = p2.statsGlobal.Select(s => Pokemon.CalculateOtherStat(s, 50)).ToArray();
+            
             var defender = new Pokemon
             {
-                stats = defenderStats,
+                stats = defendingTeam.statsGlobal,
                 level = 50,
                 type1 = p2.typeGlobal[0],
                 type2 = p2.typeGlobal[1],
             };
 
-            var (dmg, effectiveness) = DamageCalculator.CalculateDamage(attacker, defender, move);
+            var (dmg, effectiveness, crit) = DamageCalculator.CalculateDamage(attacker, defender, move);
             HandeEffectivenessSound(effectiveness);
 
             if (!isP1)
