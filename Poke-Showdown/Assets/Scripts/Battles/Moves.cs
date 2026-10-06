@@ -40,6 +40,7 @@ namespace Battles
                     _poolFull = false;
                     
                     Enum.TryParse(moveStat.type.name,true,out PokemonData.Type type);
+                    Enum.TryParse(moveStat.damage_class.name,true,out MoveClass damageClass);
         
                     if (movePower.HasValue)
                     {
@@ -52,6 +53,8 @@ namespace Battles
                             priority = moveStat.priority.Value,
                             type = type,
                             accuracy = moveStat.accuracy ?? 0,
+                            moveClass = damageClass,
+                            effects = new [] { MoveEffect.DealDamage }
                         });
                     }
                     _poolFull = true;

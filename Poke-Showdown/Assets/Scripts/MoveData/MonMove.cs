@@ -6,6 +6,13 @@ namespace MoveData
     {
         Phsyical,Special,Status
     }
+
+    public enum MoveEffect
+    {
+        DealDamage, KillSelf, RaiseStatAtk, RaiseStatDef, RaiseStatSpDef, RaiseStatSpAtk, RaiseStatSpeed, RaiseStatEvasion,
+        RaiseStatAcc, RaiseStatCrit, FlinchTarget, SetWeatherRain, SetWeatherSun, SetWeatherSand
+        
+    }
     public struct MonMove
     {
         public string moveName { get; set; }
@@ -17,5 +24,6 @@ namespace MoveData
         public int priority;
         public int targets;
         public int accuracy;
+        public MoveEffect[] effects;
     }
 }
